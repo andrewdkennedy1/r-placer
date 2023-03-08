@@ -32,10 +32,8 @@ def _add_developer_account(name):
         with open('dev_accounts.json', 'w') as f:
             accounts.update({name: {"client-id": client_id, "secret": secret}})
             dump(accounts, f)
-    if _config.config['tor']:
-        s = _tor_session()
-    else:
-        s = Session()
+
+    s = _tor_session() if _config.config['tor'] else Session()
     text = s.get('https://www.reddit.com/login').text
     csrf = text[text.find('csrf_token') + 19:text.find('csrf_token') + 59]
     r = s.post('https://www.reddit.com/login',

@@ -52,7 +52,7 @@ class Logger:
         elif isinstance(severity(), cls.Warn):
             output += '[33m[WARN][0m'
 
-        print(output + ' ' + text)
+        print(f'{output} {text}')
 
 
 Logger.verbose = _config.config['verbose']
@@ -71,12 +71,11 @@ class manager:
                 self.canvas = 3
             else:
                 self.canvas = 1
+        elif (self.image_location[1] > 1000):
+            self.image_location[1] -= 1000
+            self.canvas = 2
         else:
-            if (self.image_location[1] > 1000):
-                self.image_location[1] -= 1000
-                self.canvas = 2
-            else:
-                self.canvas = 0
+            self.canvas = 0
         self.accounts = []
         self.image_data = parse_image.parse_image(image_dir, self.image_location)
         self.image_size = parse_image.get_image_size(image_dir)
@@ -111,28 +110,24 @@ class manager:
         for (x, y), color in self.get_board().items():
             if self.image_data[(x, y)] != color:
                 events[self.image_data[(x, y)]].append((x, y))
-        deletes = []
-        for event in events:
-            if len(events[event]) == 0:
-                deletes.append(event)
+        deletes = [event for event, value in events.items() if len(value) == 0]
         for d in deletes:
             del events[d]
         return events
 
     def choose_account(self):
-        for i in range(len(self.accounts)):
+        for _ in range(len(self.accounts)):
             account = random.choice(self.accounts)
-            if (account['state'] == 'BANNED') or (account['next_available'] > time.time()) or (account['state'] == 'IN USE'):
-                continue
-            else:
+            if (
+                account['state'] != 'BANNED'
+                and account['next_available'] <= time.time()
+                and account['state'] != 'IN USE'
+            ):
                 return account
         return None
 
     def check_ban_status(self):
-        bans = 1
-        for account in self.accounts:
-            if account['state'] == 'BANNED':
-                bans += 1
+        bans = 1 + sum(account['state'] == 'BANNED' for account in self.accounts)
         if bans == len(self.accounts):
             Logger.log('All accounts banned!', severity=Logger.Error)
             self.stop()
@@ -161,12 +156,11 @@ class manager:
                 time.sleep(random.randint(1, 1 + int(_config.config['worker-count'] / 2)))  # random sleep for less worker conflict
                 if self.queue.empty():
                     continue
-                else:
-                    account = self.choose_account()
-                    if not account:
-                        Logger.log(f'{current_thread().name} - No accounts available! Waiting 30 seconds.', severity=Logger.Error)
-                        time.sleep(30)
-                        continue
+                account = self.choose_account()
+                if not account:
+                    Logger.log(f'{current_thread().name} - No accounts available! Waiting 30 seconds.', severity=Logger.Error)
+                    time.sleep(30)
+                    continue
                 account['state'] = 'IN USE'
                 coords, color = self.queue.get()
                 Logger.log(f'{current_thread().name} - Setting pixel {coords} on canvas {self.canvas} to color {color}', severity=Logger.Verbose)

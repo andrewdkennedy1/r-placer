@@ -11,8 +11,8 @@ chars = {
 
 
 def random_string(length=16):
-    return ''.join(random.choice(chars['all']) for i in range(length))
+    return ''.join(random.choice(chars['all']) for _ in range(length))
 
 
 def random_letters(length=20):
-    return ''.join(random.choice(chars['letters']) for i in range(length))
+    return ''.join(random.choice(chars['letters']) for _ in range(length))

@@ -49,7 +49,7 @@ def _closet_color_index(rgb):
 
 
 def get_image_size(image_dir):
-    return np.array(Image.open(image_dir)).shape[0:2]
+    return np.array(Image.open(image_dir)).shape[:2]
 
 
 def parse_image(image_dir, image_location=None):  # x and y argument for location of the image on the canvas
